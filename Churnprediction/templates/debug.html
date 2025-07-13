@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Churn Prediction</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        form { margin-bottom: 20px; }
+        button { padding: 10px; background: #4CAF50; color: white; border: none; cursor: pointer; }
+        pre { background: #f4f4f4; padding: 10px; border-radius: 5px; }
+        .result { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Debug Churn Prediction</h1>
+    
+    <form id="debugForm">
+        <div>
+            <label>Credit Score: </label>
+            <input type="number" name="CreditScore" value="650" required>
+        </div>
+        <div>
+            <label>Geography: </label>
+            <select name="Geography">
+                <option value="France">France</option>
+                <option value="Germany">Germany</option>
+                <option value="Spain">Spain</option>
+            </select>
+        </div>
+        <div>
+            <label>Gender: </label>
+            <select name="Gender">
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+            </select>
+        </div>
+        <div>
+            <label>Age: </label>
+            <input type="number" name="Age" value="35" required>
+        </div>
+        <div>
+            <label>Tenure: </label>
+            <input type="number" name="Tenure" value="5" required>
+        </div>
+        <div>
+            <label>Balance: </label>
+            <input type="number" name="Balance" value="10000" required>
+        </div>
+        <div>
+            <label>Number of Products: </label>
+            <select name="NumOfProducts">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+            </select>
+        </div>
+        <div>
+            <label>Has Credit Card: </label>
+            <select name="HasCrCard">
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+            </select>
+        </div>
+        <div>
+            <label>Is Active Member: </label>
+            <select name="IsActiveMember">
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+            </select>
+        </div>
+        <div>
+            <label>Estimated Salary: </label>
+            <input type="number" name="EstimatedSalary" value="60000" required>
+        </div>
+        <button type="submit">Test Prediction</button>
+    </form>
+    
+    <div>
+        <h3>Request Data:</h3>
+        <pre id="requestData"></pre>
+    </div>
+    
+    <div>
+        <h3>Response:</h3>
+        <pre id="responseData"></pre>
+    </div>
+    
+    <div class="result" id="predictionResult"></div>
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const form = document.getElementById("debugForm");
+            
+            form.addEventListener("submit", function(event) {
+                event.preventDefault();
+                
+                document.getElementById("requestData").textContent = "";
+                document.getElementById("responseData").textContent = "";
+                document.getElementById("predictionResult").innerHTML = "";
+                
+                const formData = {
+                    CreditScore: document.querySelector("[name='CreditScore']").value,
+                    Geography_France: document.querySelector("[name='Geography']").value === "France" ? 1 : 0,
+                    Geography_Germany: document.querySelector("[name='Geography']").value === "Germany" ? 1 : 0,
+                    Geography_Spain: document.querySelector("[name='Geography']").value === "Spain" ? 1 : 0,
+                    Gender: document.querySelector("[name='Gender']").value === "Male" ? 1 : 0,
+                    Age: document.querySelector("[name='Age']").value,
+                    Tenure: document.querySelector("[name='Tenure']").value,
+                    Balance: document.querySelector("[name='Balance']").value,
+                    NumOfProducts_1: document.querySelector("[name='NumOfProducts']").value == "1" ? 1 : 0,
+                    NumOfProducts_2: document.querySelector("[name='NumOfProducts']").value == "2" ? 1 : 0,
+                    NumOfProducts_3: document.querySelector("[name='NumOfProducts']").value == "3" ? 1 : 0,
+                    NumOfProducts_4: document.querySelector("[name='NumOfProducts']").value == "4" ? 1 : 0,
+                    HasCrCard: document.querySelector("[name='HasCrCard']").value === "1" ? 1 : 0,
+                    IsActiveMember: document.querySelector("[name='IsActiveMember']").value === "1" ? 1 : 0,
+                    EstimatedSalary: document.querySelector("[name='EstimatedSalary']").value
+                };
+                
+                document.getElementById("requestData").textContent = JSON.stringify(formData, null, 2);
+                
+                fetch("/predict", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(formData)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("HTTP error " + response.status);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    document.getElementById("responseData").textContent = JSON.stringify(data, null, 2);
+                    
+                    if (data.hasOwnProperty('churn')) {
+                        document.getElementById("predictionResult").innerHTML = data.churn 
+                            ? "<b style='color: red;'>Customer is likely to churn.</b>" 
+                            : "<b style='color: green;'>Customer is not likely to churn.</b>";
+                    } else if (data.hasOwnProperty('error')) {
+                        document.getElementById("predictionResult").innerHTML = 
+                            "<b style='color: red;'>Error: " + data.error + "</b>";
+                    }
+                })
+                .catch(error => {
+                    document.getElementById("responseData").textContent = "Error: " + error.message;
+                    document.getElementById("predictionResult").innerHTML = 
+                        "<b style='color: red;'>Error processing request.</b>";
+                });
+            });
+        });
+    </script>
+</body>
+</html> 
